@@ -1,5 +1,8 @@
 import bpy
-from IusdzAddon.ui.StaticFuncs import addTrigger, addInteraction, get_active_interaction, get_active_trigger, addAction, addIUsdzScene, removeIUsdzScene, get_active_iUsdzScene, get_object_iUsdzScenes
+from IusdzAddon.ui.StaticFuncs import addIUsdzScene, addInteraction, addAction, addTrigger,\
+        get_active_iUsdzScene, get_active_interaction, get_active_trigger, get_active_action, \
+        removeIUsdzScene, removeInteraction, removeAction, removeTrigger, \
+        get_object_iUsdzScenes
 from IusdzAddon.ui.StaticVars import trigger_types, action_types, is_active_obj_selected
 from bpy.props import EnumProperty, StringProperty
 from bpy.types import Operator
@@ -11,34 +14,36 @@ class AddElementButton(Operator):
     bl_idname = "object.add_element_button"
     bl_label = ""
     bl_options = {'REGISTER', 'UNDO'}
-    element_name: StringProperty("element name", default="element")
     bl_description = f'Add a new element'
-    input_field: StringProperty(f"Element name")
 
+    element_type: StringProperty("element name", default="element")
+    input_field: StringProperty(f"Element name")
+    triggerType: EnumProperty(name="Trigger Type", items=trigger_types)
+    actionType: EnumProperty(name="Action Type", items=action_types)
 
     def invoke(self, context, event):
-        if (self.element_name == "iusdzscene"):
+        if (self.element_type == "iusdzscene"):
             self.input_field = f"IUScene{len(bpy.context.scene.allIUsdzScenes)}"
-        elif (self.element_name == "interaction"):
+        elif (self.element_type == "interaction"):
             self.input_field = f"Inter{len(get_active_iUsdzScene().interactions)}"
-        elif (self.element_name == "trigger"):
+        elif (self.element_type == "trigger"):
             self.input_field = f"Trigger{len(get_active_interaction().triggers)}"
-        elif (self.element_name == "action"):
+        elif (self.element_type == "action"):
             self.input_field = f"Action{len(get_active_interaction().actions)}"
         return context.window_manager.invoke_props_dialog(self)
     
     def execute(self, context):
         try:
-            if (self.element_name == "iusdzscene"):
+            if (self.element_type == "iusdzscene"):
                 scene = addIUsdzScene(self.input_field, bpy.context.selected_objects)
                 context.scene.activeIUsdzSceneName = scene.name
-            elif (self.element_name == "interaction"):
+            elif (self.element_type == "interaction"):
                 interaction = addInteraction(self.input_field)
                 get_active_iUsdzScene().usdzActiveInteractionName = interaction.name
-            elif (self.element_name == "trigger"):
+            elif (self.element_type == "trigger"):
                 trigger = addTrigger(self.input_field, self.triggerType)
                 get_active_iUsdzScene().usdzActiveTriggerName = trigger.name
-            elif (self.element_name == "action"):
+            elif (self.element_type == "action"):
                 action = addAction(self.input_field, self.actionType)
                 get_active_iUsdzScene().usdzActiveActionName = action.name
             # update the panel
@@ -52,6 +57,63 @@ class AddElementButton(Operator):
         layout = self.layout
         # input field for interaction name
         layout.prop(self, "input_field", text="Name")
+        if (self.element_type == "trigger"):
+            row = layout.row()
+            row.label(text="Trigger Type")
+            row.prop_menu_enum(self, property="triggerType", text=self.triggerType)
+        elif (self.element_type == "action"):
+            row = layout.row()
+            row.label(text="Action Type")
+            row.prop_menu_enum(self, property="actionType", text=self.actionType)
+
+
+class RemoveElementButton(Operator):
+    bl_idname = "object.remove_element_button"
+    bl_label = ""
+    bl_options = {'REGISTER', 'UNDO'}
+    element_type: StringProperty("element name", default="element")
+    bl_description = 'Remove element'
+
+    def invoke(self, context, event):
+        element = None
+        match self.element_type:
+            case "iusdzscene":
+                element = get_active_iUsdzScene()
+            case "interaction":
+                element = get_active_interaction()
+            case "trigger":
+                element = get_active_trigger()
+            case "action":
+                element = get_active_action()
+        if element is None:
+            return {'CANCELLED'}
+        return context.window_manager.invoke_props_dialog(self, title=f"Remove {element.name} {self.element_type}?")
+    
+    def execute(self, context):
+        try:
+            if (self.element_type == "iusdzscene"):
+                removeIUsdzScene(get_active_iUsdzScene())
+            elif (self.element_type == "interaction"):
+                removeInteraction(get_active_interaction())
+            elif (self.element_type == "trigger"):
+                removeTrigger(get_active_trigger())
+            elif (self.element_type == "action"):
+                removeAction(get_active_action())
+
+            # update the panel
+            bpy.context.area.tag_redraw()
+        except ValueError as e:
+            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
+        
+        return {'FINISHED'}
+    
+    def draw(self, context):
+        layout = self.layout
+        # confirmation message
+
+        layout.label(text="All its properties will be removed as well.")
+        
+        
 
 class IUsdzScenesEnumOperator(Operator):
     bl_label = ''
@@ -77,61 +139,6 @@ class IUsdzScenesEnumOperator(Operator):
         return {'FINISHED'}
 
 
-class AddIUsdzSceneButton(Operator):
-    bl_idname = "object.add_iusdzscene_button"
-    bl_label = ""
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Add a new IUsdz Scene with selected objects'
-    input_field: StringProperty("IUsdz Scene Name")
-
-
-    def invoke(self, context, event):
-        self.input_field = f"IUScene{len(bpy.context.scene.allIUsdzScenes)}"
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        try:
-            scene = addIUsdzScene(self.input_field, bpy.context.selected_objects)
-            context.scene.activeIUsdzSceneName = scene.name
-            # update the panel
-            bpy.context.area.tag_redraw()
-        except ValueError as e:
-            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
-        
-        return {'FINISHED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        # input field for IUsdzScene name
-        layout.prop(self, "input_field", text="Name")
-
-class RemoveIUsdzSceneButton(Operator):
-    bl_idname = "object.remove_iusdzscene_button"
-    bl_label = ""
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Remove active IUsdz Scene'
-    input_field: StringProperty("IUsdz Scene Name")
-
-
-    def invoke(self, context, event):
-        self.input_field = f"IUScene{len(bpy.context.scene.allIUsdzScenes)}"
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        try:
-            removeIUsdzScene(get_active_iUsdzScene())
-            # update the panel
-            bpy.context.area.tag_redraw()
-        except ValueError as e:
-            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
-        
-        return {'FINISHED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        # input field for IUsdzScene name
-        layout.prop(self, "input_field", text="Name")
-        
 
 class InteractionsEnumOperator(Operator):
     bl_label = ''
@@ -147,35 +154,6 @@ class InteractionsEnumOperator(Operator):
         return {'FINISHED'}
 
 
-class AddInteractionButton(Operator):
-    bl_idname = "object.add_interaction_button"
-    bl_label = ""
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Add a new interaction'
-    input_field: StringProperty("Interaction Name")
-
-
-    def invoke(self, context, event):
-        self.input_field = f"Inter{len(get_active_iUsdzScene().interactions)}"
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        try:
-            interaction = addInteraction(self.input_field)
-            get_active_iUsdzScene().usdzActiveInteractionName = interaction.name
-            # update the panel
-            bpy.context.area.tag_redraw()
-        except ValueError as e:
-            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
-        
-        return {'FINISHED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        # input field for interaction name
-        layout.prop(self, "input_field", text="Name")
-        
-
 class TriggerEnumOperator(Operator):
     bl_label = ''
     bl_idname = 'object.trigger_enum_operator'
@@ -189,39 +167,6 @@ class TriggerEnumOperator(Operator):
         get_active_iUsdzScene().usdzActiveTriggerName = self.triggers
         
         return {'FINISHED'}
-
-
-class AddTriggerButton(Operator):
-    bl_idname = "object.add_trigger_button"
-    bl_label = ""
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Add a new trigger'
-    input_field: StringProperty("Trigger Name")
-    triggerType: EnumProperty(name="Trigger Type", items=trigger_types)
-
-
-    def invoke(self, context, event):
-        self.input_field = f"Trigger{len(get_active_interaction().triggers)}"
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        try:
-            trigger = addTrigger(self.input_field, self.triggerType)
-            get_active_iUsdzScene().usdzActiveTriggerName = trigger.name
-            # update the panel
-            bpy.context.area.tag_redraw()
-        except ValueError as e:
-            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
-        
-        return {'FINISHED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        # input field for Trigger name
-        layout.prop(self, "input_field", text="Name")
-        row = layout.row()
-        row.label(text="Trigger Type")
-        row.prop_menu_enum(self, property="triggerType", text=self.triggerType)
 
         
 class ActionEnumOperator(Operator):
@@ -237,39 +182,7 @@ class ActionEnumOperator(Operator):
         
         return {'FINISHED'}
 
-
-class AddActionButton(Operator):
-    bl_idname = "object.add_action_button"
-    bl_label = ""
-    bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Add a new action'
-    input_field: StringProperty("Action Name")
-    actionType: EnumProperty(name="Action Type", items=action_types)
-
-
-    def invoke(self, context, event):
-        self.input_field = f"Action{len(get_active_interaction().actions)}"
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        try:
-            action = addAction(self.input_field, self.actionType)
-            get_active_iUsdzScene().usdzActiveActionName = action.name
-            # update the panel
-            bpy.context.area.tag_redraw()
-        except ValueError as e:
-            bpy.context.window_manager.popup_menu(lambda self, context: self.layout.label(text=str(e)), title="Error", icon='ERROR')
-        
-        return {'FINISHED'}
-    
-    def draw(self, context):
-        layout = self.layout
-        # input field for Action name
-        layout.prop(self, "input_field", text="Name")
-        row = layout.row()
-        row.label(text="Action Type")
-        row.prop_menu_enum(self, property="actionType", text=self.actionType)
-
+# todo change to SelectObjectOperator
 class EditTriggeredObjectsButton(Operator):
     bl_idname = "object.edit_triggered_objects"
     bl_label = ""

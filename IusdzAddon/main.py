@@ -21,11 +21,8 @@ if module_path not in sys.path:
 
 from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, IUsdzSceneReference
 from IusdzAddon.ui.Operators import \
-    InteractionsEnumOperator, AddInteractionButton, \
-        TriggerEnumOperator, AddTriggerButton, \
-            ActionEnumOperator, AddActionButton, \
-                IUsdzScenesEnumOperator, AddIUsdzSceneButton, RemoveIUsdzSceneButton, \
-                AddElementButton
+    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, \
+        AddElementButton, RemoveElementButton
 from IusdzAddon.ui.StaticFuncs import get_active_interaction, get_active_trigger, get_active_action, get_active_iUsdzScene, get_object_iUsdzScenes
 from IusdzAddon.ui.StaticVars import is_active_obj_selected
 
@@ -42,13 +39,10 @@ class IUPanel(bpy.types.Panel):
         #layout.row().operator("object.exit_iusdz", icon='X')
 
 
-        layout.row().label(text="IUsdz Scenes")
         row = layout.row()
-        column = row.column()
-        column.alignment = 'LEFT'
-        operator = row.operator("object.add_element_button", icon='ADD')
-        operator.element_name = "iusdzscene"
-        row.operator("object.remove_iusdzscene_button", icon='REMOVE')
+        row.label(text="IUsdz Scenes")
+        row.operator("object.add_element_button", icon='ADD').element_type = "iusdzscene"
+        row.operator("object.remove_element_button", icon='REMOVE').element_type = "iusdzscene"
 
         if len(bpy.context.selected_objects)==0:
             if len(bpy.context.scene.allIUsdzScenes)>0:
@@ -66,6 +60,7 @@ class IUPanel(bpy.types.Panel):
                 IUsdzScene_available = False
                 text = "--"
         
+        row = layout.row()
         row.operator_menu_enum("object.iusdzscenes_enum_operator",
                                   property="iUsdzScenes",
                                   text=text)
@@ -74,13 +69,12 @@ class IUPanel(bpy.types.Panel):
             active_iUsdzScene = get_active_iUsdzScene()
 
             box = layout.box()
-            box.row().label(text="Interaction")
             row = box.row()
-            column = row.column()
-            column.alignment = 'LEFT'
-            operator = column.operator("object.add_element_button", icon='ADD')
-            operator.element_name = "interaction"
+            row.label(text="Interaction")
+            row.operator("object.add_element_button", icon='ADD').element_type = "interaction"
+            row.operator("object.remove_element_button", icon='REMOVE').element_type = "interaction"
             # add a list of interactions
+            row = box.row()
             row.operator_menu_enum("object.inter_enum_operator",
                                     property="interactions",
                                     text=active_iUsdzScene.usdzActiveInteractionName if len(active_iUsdzScene.interactions)!=0 else "--")
@@ -89,12 +83,12 @@ class IUPanel(bpy.types.Panel):
             # Interraction setting field
             box.enabled = get_active_interaction() is not None
             # trigger
-            box.row().label(text="Triggers")
             row = box.row()
-            column = row.column()
-            column.alignment = 'LEFT'
-            column.operator("object.add_trigger_button", icon='ADD')
+            row.label(text="Triggers")
+            row.operator("object.add_element_button", icon='ADD').element_type = "trigger"
+            row.operator("object.remove_element_button", icon='REMOVE').element_type = "trigger"
             # add a list of triggers
+            row = box.row()
             row.operator_menu_enum("object.trigger_enum_operator",
                                     property="triggers",
                                     text= f'{get_active_trigger().triggerType}-{get_active_trigger().name}'
@@ -103,12 +97,12 @@ class IUPanel(bpy.types.Panel):
             # Trigger setting field
             #if get_active_trigger() is not None:
             # action
-            box.row().label(text="Actions")
             row = box.row()
-            column = row.column()
-            column.alignment = 'LEFT'
-            column.operator("object.add_action_button", icon='ADD')
+            row.label(text="Actions")
+            row.operator("object.add_element_button", icon='ADD').element_type = "action"
+            row.operator("object.remove_element_button", icon='REMOVE').element_type = "action"
             # add a list of actions
+            row = box.row()
             row.operator_menu_enum("object.action_enum_operator",
                                     property="actions",
                                     text= f'{get_active_action().actionType}-{get_active_action().name}'
@@ -128,11 +122,8 @@ class IUPanel(bpy.types.Panel):
 
 ui_classes = [
     IUPanel, 
-    InteractionsEnumOperator, AddInteractionButton, 
-    TriggerEnumOperator, AddTriggerButton, 
-    ActionEnumOperator, AddActionButton, 
-    IUsdzScenesEnumOperator, AddIUsdzSceneButton, RemoveIUsdzSceneButton, 
-    AddElementButton
+    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, 
+    AddElementButton, RemoveElementButton
 ]
 properties = [
     Trigger, Action, Interaction, IUsdzScene, IUsdzSceneReference

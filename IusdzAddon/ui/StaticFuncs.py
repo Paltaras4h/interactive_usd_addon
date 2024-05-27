@@ -11,6 +11,10 @@ def addTrigger(name, triggerType):
     trigger.triggerType = triggerType
     return trigger
 
+def removeTrigger(trigger):
+    get_active_interaction().triggers.remove(get_active_interaction().triggers.find(trigger.name))
+    get_active_iUsdzScene().usdzActiveTriggerName = get_active_interaction().triggers[0].name if len(get_active_interaction().triggers) != 0 else ""
+
 def addAction(name, actionType):
     if name in [action.name for action in get_active_interaction().actions]:# if get_active_interaction() is not None else [("--", "--", "add a trigger")]:
         # show window with error
@@ -20,6 +24,10 @@ def addAction(name, actionType):
     action.actionType = actionType
     return action
 
+def removeAction(action):
+    get_active_interaction().actions.remove(get_active_interaction().actions.find(action.name))
+    get_active_iUsdzScene().usdzActiveActionName = get_active_interaction().actions[0].name if len(get_active_interaction().actions) != 0 else ""
+
 def addInteraction(name):
     if name in [interaction.name for interaction in get_active_iUsdzScene().interactions]:
         # show window with error
@@ -27,6 +35,12 @@ def addInteraction(name):
     interaction = get_active_iUsdzScene().interactions.add()
     interaction.name = name
     return interaction
+
+def removeInteraction(interaction):
+    get_active_iUsdzScene().interactions.remove(get_active_iUsdzScene().interactions.find(interaction.name))
+    get_active_iUsdzScene().usdzActiveInteractionName = get_active_iUsdzScene().interactions[0].name if len(get_active_iUsdzScene().interactions) != 0 else ""
+    get_active_iUsdzScene().usdzActiveTriggerName = get_active_interaction().triggers[0].name if len(get_active_interaction().triggers) != 0 else ""
+    get_active_iUsdzScene().usdzActiveActionName = get_active_interaction().actions[0].name if len(get_active_interaction().actions) != 0 else ""
 
 def addIUsdzScene(name, objects):
     if name in [scene.name for scene in bpy.context.scene.allIUsdzScenes]:
@@ -42,9 +56,9 @@ def addIUsdzScene(name, objects):
     return scene
 
 def removeIUsdzScene(iUsdzScene):
-    bpy.context.scene.allIUsdzScenes.remove(iUsdzScene)
+    bpy.context.scene.allIUsdzScenes.remove(bpy.context.scene.allIUsdzScenes.find(iUsdzScene.name))
     bpy.context.scene.activeIUsdzSceneName = bpy.context.scene.allIUsdzScenes[0].name if len(bpy.context.scene.allIUsdzScenes) != 0 else ""
-    bpy.context.active_object.objectIUsdzScenesNames.remove(iUsdzScene.name)
+    bpy.context.active_object.objectIUsdzScenesNames.remove(bpy.context.active_object.objectIUsdzScenesNames.find(iUsdzScene.name))
 
 
 
