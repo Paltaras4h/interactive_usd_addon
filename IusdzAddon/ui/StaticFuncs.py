@@ -1,5 +1,6 @@
 import bpy
 from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status
+from IusdzAddon.ui.Exceptions import ElementNotCreated
 
 # static funcs
 def addTrigger(name, triggerType):
@@ -39,9 +40,12 @@ def addInteraction(name):
 
 def removeInteraction(interaction):
     get_active_iUsdzScene().interactions.remove(get_active_iUsdzScene().interactions.find(interaction.name))
-    get_active_iUsdzScene().usdzActiveInteractionName = get_active_iUsdzScene().interactions[0].name if len(get_active_iUsdzScene().interactions) != 0 else ""
-    get_active_iUsdzScene().usdzActiveTriggerName = get_active_interaction().triggers[0].name if len(get_active_interaction().triggers) != 0 else ""
-    get_active_iUsdzScene().usdzActiveActionName = get_active_interaction().actions[0].name if len(get_active_interaction().actions) != 0 else ""
+    if len(get_active_iUsdzScene().interactions) != 0:
+        get_active_iUsdzScene().usdzActiveInteractionName = get_active_iUsdzScene().interactions[0].name
+        get_active_iUsdzScene().usdzActiveTriggerName = get_active_interaction().triggers[0].name if len(get_active_interaction().triggers) != 0 else ""
+        get_active_iUsdzScene().usdzActiveActionName = get_active_interaction().actions[0].name if len(get_active_interaction().actions) != 0 else ""
+    else: 
+        get_active_iUsdzScene().usdzActiveInteractionName = ""
 
 def addIUsdzScene(name, objects):
     if name in [scene.name for scene in bpy.context.scene.allIUsdzScenes]:
@@ -51,7 +55,6 @@ def addIUsdzScene(name, objects):
     scene = bpy.context.scene.allIUsdzScenes.add()
     scene.name = name
 
-    print("addIUsdzScene", objects)
     if len(objects) != 0:
         scene.add_all_objects(objects)
 
@@ -68,28 +71,37 @@ def get_interaction_by_name(name):
     try:
         return get_active_iUsdzScene().interactions[name]
     except KeyError:
-        return None
+        raise ElementNotCreated("interaction")
     
 def get_active_interaction():
-    return get_interaction_by_name(get_active_iUsdzScene().usdzActiveInteractionName)
+    try:
+        return get_interaction_by_name(get_active_iUsdzScene().usdzActiveInteractionName)
+    except ElementNotCreated as e:
+        raise e
 
 def get_trigger_by_name(name):
     try:
         return get_active_interaction().triggers[name]
     except KeyError:
-        return None
+        raise ElementNotCreated("trigger")
 
 def get_active_trigger():
-    return get_trigger_by_name(get_active_iUsdzScene().usdzActiveTriggerName)
+    try:
+        return get_trigger_by_name(get_active_iUsdzScene().usdzActiveTriggerName)
+    except ElementNotCreated as e:
+        raise e
 
 def get_action_by_name(name):
     try:
         return get_active_interaction().actions[name]
     except KeyError:
-        return None
+        raise ElementNotCreated("action")
 
 def get_active_action():
-    return get_action_by_name(get_active_iUsdzScene().usdzActiveActionName)
+    try:
+        return get_action_by_name(get_active_iUsdzScene().usdzActiveActionName)
+    except ElementNotCreated as e:
+        raise e
 
 def get_iUsdzScene_by_name(name):
     try:
@@ -107,7 +119,7 @@ def get_active_iUsdzScene():
                 active_iUsdzScene = get_iUsdzScene_by_name(bpy.context.scene.activeIUsdzSceneName)
             else:
                 active_iUsdzScene = bpy.context.scene.allIUsdzScenes[0]
-                bpy.context.scene.activeIUsdzSceneName = active_iUsdzScene.name
+                #bpy.context.scene.activeIUsdzSceneName = active_iUsdzScene.name
         else:
             active_iUsdzScene = None
     if is_active_obj_selected():
@@ -116,7 +128,7 @@ def get_active_iUsdzScene():
             active_iUsdzScene = obj_iUsdzScenes[0]
         else:
             active_iUsdzScene = None
-    print("active_iUsdzScene", active_iUsdzScene)
+            
     return active_iUsdzScene
     
 def get_object_iUsdzScenes(object):

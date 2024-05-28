@@ -1,7 +1,6 @@
 import bpy
 from bpy.props import EnumProperty
-from IusdzAddon.ui.StaticVars import trigger_types, action_types
-from IusdzAddon.ui.StaticFuncs import get_active_interaction, get_active_iUsdzScene
+from IusdzAddon.ui.StaticVars import trigger_types
 
 class Trigger(bpy.types.PropertyGroup):
     affectedObjects = []
@@ -13,7 +12,7 @@ class Trigger(bpy.types.PropertyGroup):
     def add_all_objects(self, objects):
         self.affectedObjects.extend(objects)
         for object in objects:
-            object.objectTriggersNames.add().name = self.name
+            object.objectTriggerNames.add().name = self.name
 
     def update_objects(self, source_objects):
         for object in self.affectedObjects.copy():
@@ -23,12 +22,12 @@ class Trigger(bpy.types.PropertyGroup):
         self.add_all_objects(objects_to_add)
     
     def remove_object(self, object):
-        object.objectTriggersNames.remove(object.objectTriggersNames.find(self.name))
+        object.objectTriggerNames.remove(object.objectTriggerNames.find(self.name))
         self.affectedObjects.remove(object)
 
     def clear_objects(self):
         for object in self.affectedObjects:
-            object.objectTriggersNames.remove(object.objectTriggersNames.find(self.name))
+            object.objectTriggerNames.remove(object.objectTriggerNames.find(self.name))
         self.affectedObjects.clear()
 
     def select_objects(self):
@@ -123,7 +122,6 @@ class IUsdzScene(bpy.types.PropertyGroup):
 
     
     def select_objects(self):
-        print(len(self.objects))
         if len(self.objects) == 0:
             return
         

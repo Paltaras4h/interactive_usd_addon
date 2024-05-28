@@ -118,7 +118,7 @@ class IUsdzScenesEnumOperator(Operator):
             return [(iUsdzScene.name, iUsdzScene.name, iUsdzScene.name) for iUsdzScene in bpy.context.scene.allIUsdzScenes if iUsdzScene is not None]
         if is_active_obj_selected():
             result = [(iUsdzScene.name, iUsdzScene.name, iUsdzScene.name) for iUsdzScene in get_object_iUsdzScenes(bpy.context.active_object) if iUsdzScene is not None]
-            context.scene.activeIUsdzSceneName = "" if len(result)==0 else result[0][0]
+            #context.scene.activeIUsdzSceneName = "" if len(result)==0 else result[0][0]
             bpy.context.area.tag_redraw()
             return result
     iUsdzScenes : EnumProperty(name="IUsdzScenes", items=get_iUsdzScenes)
