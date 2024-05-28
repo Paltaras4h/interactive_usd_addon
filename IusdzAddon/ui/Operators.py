@@ -2,12 +2,12 @@ import bpy
 from IusdzAddon.ui.StaticFuncs import addIUsdzScene, addInteraction, addAction, addTrigger,\
         get_active_iUsdzScene, get_active_interaction, get_active_trigger, get_active_action, \
         removeIUsdzScene, removeInteraction, removeAction, removeTrigger, \
-        get_object_iUsdzScenes
-from IusdzAddon.ui.StaticVars import trigger_types, action_types, is_active_obj_selected
+        get_object_iUsdzScenes, get_active_element_by_type
+from IusdzAddon.ui.StaticVars import trigger_types, action_types, is_active_obj_selected, get_object_selection_status, set_object_selection_status, \
+        get_tmp_selected_objects, set_tmp_selected_objects, get_tmp_active_object, set_tmp_active_object
 from bpy.props import EnumProperty, StringProperty
 from bpy.types import Operator
 
-object_selection_status = False
 
 
 class AddElementButton(Operator):
@@ -16,7 +16,7 @@ class AddElementButton(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = f'Add a new element'
 
-    element_type: StringProperty("element name", default="element")
+    element_type: StringProperty("element type", default="element")
     input_field: StringProperty(f"Element name")
     triggerType: EnumProperty(name="Trigger Type", items=trigger_types)
     actionType: EnumProperty(name="Action Type", items=action_types)
@@ -75,16 +75,7 @@ class RemoveElementButton(Operator):
     bl_description = 'Remove element'
 
     def invoke(self, context, event):
-        element = None
-        match self.element_type:
-            case "iusdzscene":
-                element = get_active_iUsdzScene()
-            case "interaction":
-                element = get_active_interaction()
-            case "trigger":
-                element = get_active_trigger()
-            case "action":
-                element = get_active_action()
+        element = get_active_element_by_type(self.element_type)
         if element is None:
             return {'CANCELLED'}
         return context.window_manager.invoke_props_dialog(self, title=f"Remove {element.name} {self.element_type}?")
@@ -111,7 +102,7 @@ class RemoveElementButton(Operator):
         layout = self.layout
         # confirmation message
 
-        layout.label(text="All its properties will be removed as well.")
+        layout.label(text="All its interactions will be removed as well.")
         
         
 
@@ -122,7 +113,7 @@ class IUsdzScenesEnumOperator(Operator):
     def get_iUsdzScenes(self, context):
         if len(bpy.context.selected_objects)==0:
             if context.scene.activeIUsdzSceneName == "":
-                context.scene.activeIUsdzSceneName = bpy.context.scene.allIUsdzScenes[0].name
+                context.scene.activeIUsdzSceneName = bpy.context.scene.allIUsdzScenes[0].name if len(bpy.context.scene.allIUsdzScenes)>0 else ""
             bpy.context.area.tag_redraw()
             return [(iUsdzScene.name, iUsdzScene.name, iUsdzScene.name) for iUsdzScene in bpy.context.scene.allIUsdzScenes if iUsdzScene is not None]
         if is_active_obj_selected():
@@ -182,27 +173,68 @@ class ActionEnumOperator(Operator):
         
         return {'FINISHED'}
 
-# todo change to SelectObjectOperator
-class EditTriggeredObjectsButton(Operator):
-    bl_idname = "object.edit_triggered_objects"
+
+class EditAffectedObjectsButton(Operator):
+    bl_idname = "object.edit_affected_objects"
     bl_label = ""
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Edit triggered objects'
+    bl_description = 'Edit affected objects'
+
+    element_type: StringProperty("element type", default="element")
 
     def execute(self, context):
-        object_selection_status = True
-        bpy.context.scene.TmpObjectName = bpy.context.active_object.name
+        print("Edit affected objects", self.element_type)
+        set_object_selection_status(self.element_type)
+        element = get_active_element_by_type(self.element_type)
+        print("Edit affected objects, type:", self.element_type, "element:")
+        if element is None:
+            set_object_selection_status(None)
+            return {'CANCELLED'}
+        
+        set_tmp_selected_objects(bpy.context.selected_objects)
+        set_tmp_active_object(bpy.context.active_object)
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = None
+
+        element.select_objects()
         return {'FINISHED'}
     
-class SelectTriggeredObjectsOperator(Operator):
-    bl_idname = "object.select_triggered_objects"
+
+class SelectObjectsOperator(Operator):
+    bl_idname = "object.select_objects"
     bl_label = ""
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = 'Select triggered objects'
+    bl_description = 'Select objects'
+
 
     def execute(self, context):
-        if object_selection_status:
-            for obj in bpy.context.selected_objects:
-                print(obj)
+        print("Select objects", get_object_selection_status())
+        affected_element = get_object_selection_status()
+        element = get_active_element_by_type(affected_element)
+        if element is None:
+            set_object_selection_status(None)
+            return {'CANCELLED'}
+        
+        element.update_objects(bpy.context.selected_objects)
+        bpy.ops.object.select_all(action='DESELECT')
+        set_object_selection_status(None)
+        for obj in get_tmp_selected_objects():
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = get_tmp_active_object()
+        
         return {'FINISHED'}
     
+    
+class CancelSelectObjectsOperator(Operator):
+    bl_idname = "object.cancel_select_objects"
+    bl_label = ""
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Cancel'
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action='DESELECT')
+        set_object_selection_status(None)
+        for obj in get_tmp_selected_objects():
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = get_tmp_active_object()
+        return {'FINISHED'}

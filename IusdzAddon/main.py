@@ -19,12 +19,13 @@ module_path = os.path.dirname("D:\\_projects\\interactive_usd_addon\\IusdzAddon"
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, IUsdzSceneReference
+from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, NameReference
 from IusdzAddon.ui.Operators import \
+    SelectObjectsOperator, CancelSelectObjectsOperator, EditAffectedObjectsButton,\
     InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, \
         AddElementButton, RemoveElementButton
 from IusdzAddon.ui.StaticFuncs import get_active_interaction, get_active_trigger, get_active_action, get_active_iUsdzScene, get_object_iUsdzScenes
-from IusdzAddon.ui.StaticVars import is_active_obj_selected
+from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status
 
 class IUPanel(bpy.types.Panel):
     bl_label = "Interactive Usdz"
@@ -35,15 +36,29 @@ class IUPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        # reload button
-        #layout.row().operator("object.exit_iusdz", icon='X')
+        if get_object_selection_status() is not None:
+            affected_element = get_object_selection_status()
 
+            if affected_element == "iusdzscene":
+                layout.label(text=f"{get_active_iUsdzScene().name} IUsdz Scene")
+            elif affected_element == "trigger":
+                layout.label(text=f"{get_active_trigger().name} Trigger")
+            elif affected_element == "action":
+                layout.label(text=f"{get_active_action().name} Action")
+            layout.separator()
+            layout.label(text="Select objects to be affected.")
+            box = layout.box()
+            box.label(text=f"{len(bpy.context.selected_objects)} Selected objects")
+            layout.operator("object.select_objects", text="Edit", icon='RESTRICT_SELECT_OFF')
+            layout.operator("object.cancel_select_objects", text="Cancel", icon='CANCEL')
+            return
 
         row = layout.row()
         row.label(text="IUsdz Scenes")
         row.operator("object.add_element_button", icon='ADD').element_type = "iusdzscene"
         row.operator("object.remove_element_button", icon='REMOVE').element_type = "iusdzscene"
 
+        text = "--"
         if len(bpy.context.selected_objects)==0:
             if len(bpy.context.scene.allIUsdzScenes)>0:
                 IUsdzScene_available = True
@@ -66,6 +81,10 @@ class IUPanel(bpy.types.Panel):
                                   text=text)
         
         if IUsdzScene_available:
+            row = layout.row()
+            row.operator("object.edit_affected_objects", text='Edit affected objects', icon='RESTRICT_SELECT_OFF').element_type = "iusdzscene"
+            layout.separator()
+
             active_iUsdzScene = get_active_iUsdzScene()
 
             box = layout.box()
@@ -80,7 +99,7 @@ class IUPanel(bpy.types.Panel):
                                     text=active_iUsdzScene.usdzActiveInteractionName if len(active_iUsdzScene.interactions)!=0 else "--")
             
             box = box.box()
-            # Interraction setting field
+            # Trigger setting field
             box.enabled = get_active_interaction() is not None
             # trigger
             row = box.row()
@@ -93,9 +112,11 @@ class IUPanel(bpy.types.Panel):
                                     property="triggers",
                                     text= f'{get_active_trigger().triggerType}-{get_active_trigger().name}'
                                         if get_active_interaction() and len(get_active_interaction().triggers)!=0 else "--")
+            # edit affected objects
+            row = box.row()
+            row.operator("object.edit_affected_objects", text='Edit affected objects', icon='RESTRICT_SELECT_OFF').element_type = "trigger"
+            layout.separator()
 
-            # Trigger setting field
-            #if get_active_trigger() is not None:
             # action
             row = box.row()
             row.label(text="Actions")
@@ -107,26 +128,20 @@ class IUPanel(bpy.types.Panel):
                                     property="actions",
                                     text= f'{get_active_action().actionType}-{get_active_action().name}'
                                         if get_active_interaction() and len(get_active_interaction().actions)!=0 else "--")
-
-
-# class exit_iusdz(bpy.types.Operator):
-#     bl_idname = "object.exit_iusdz"
-#     bl_label = "Exit iusdz"
-#     bl_options = {'REGISTER', 'UNDO'}
-
-#     def execute(self, context):
-#         unregister()
-        
-#         return {'FINISHED'}
+            # edit affected objects
+            row = box.row()
+            row.operator("object.edit_affected_objects", text='Edit affected objects', icon='RESTRICT_SELECT_OFF').element_type = "action"
+            layout.separator()
 
 
 ui_classes = [
     IUPanel, 
+    SelectObjectsOperator, CancelSelectObjectsOperator, EditAffectedObjectsButton,
     InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, 
     AddElementButton, RemoveElementButton
 ]
 properties = [
-    Trigger, Action, Interaction, IUsdzScene, IUsdzSceneReference
+    Trigger, Action, Interaction, IUsdzScene, NameReference
 ]
         
 def register():
@@ -137,7 +152,9 @@ def register():
             pass
         register_class(cls)
 
-    bpy.types.Object.objectIUsdzScenesNames = bpy.props.CollectionProperty(type=IUsdzSceneReference)
+    bpy.types.Object.objectIUsdzScenesNames = bpy.props.CollectionProperty(type=NameReference)
+    bpy.types.Object.objectTriggerNames = bpy.props.CollectionProperty(type=NameReference)
+    bpy.types.Object.objectActionsNames = bpy.props.CollectionProperty(type=NameReference)
     bpy.types.Scene.allIUsdzScenes = bpy.props.CollectionProperty(type=IUsdzScene)
     bpy.types.Scene.activeIUsdzSceneName = bpy.props.StringProperty(name="Active IUsdz Scene Name")
 
@@ -153,6 +170,8 @@ def unregister():
         unregister_class(cls)
     
     del bpy.types.Object.objectIUsdzScenesNames
+    del bpy.types.Object.objectTriggerNames
+    del bpy.types.Object.objectActionsNames
     del bpy.types.Scene.allIUsdzScenes
     del bpy.types.Scene.activeIUsdzSceneName
 

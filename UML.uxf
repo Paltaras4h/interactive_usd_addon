@@ -1,92 +1,91 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="15.1">
-  <zoom_level>16</zoom_level>
+  <zoom_level>11</zoom_level>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>864</x>
-      <y>480</y>
-      <w>272</w>
-      <h>160</h>
+      <x>363</x>
+      <y>341</y>
+      <w>187</w>
+      <h>110</h>
     </coordinates>
     <panel_attributes>Interaction
 --
 name
-triggers [1..*]: list(Trigger)
-actions [1..*]: list(Action)</panel_attributes>
+/iUsdzScene/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>960</x>
-      <y>656</y>
-      <w>240</w>
-      <h>192</h>
+      <x>737</x>
+      <y>165</y>
+      <w>165</w>
+      <h>132</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;dataType&gt;&gt;
-Action
+    <panel_attributes>Action
 --
 name
-affectedObjects [1..*]
 actionType: enum
-duration: float</panel_attributes>
+duration: float
+/affectedObjects/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>672</x>
-      <y>672</y>
-      <w>240</w>
-      <h>176</h>
+      <x>726</x>
+      <y>319</y>
+      <w>165</w>
+      <h>121</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;dataType&gt;&gt;
-Trigger
+    <panel_attributes>Trigger
 --
 name
-affectedObjects [1..*]
-triggerType: enum</panel_attributes>
+triggerType: enum
+/affectedObjects/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>912</x>
-      <y>256</y>
-      <w>208</w>
-      <h>160</h>
+      <x>407</x>
+      <y>187</y>
+      <w>198</w>
+      <h>110</h>
     </coordinates>
     <panel_attributes>3dObject
 --
 name
-/objectIUsdzScenes/
-</panel_attributes>
+/objectIUsdzScenesNames/
+/objectTriggerNames/
+/objectActionsNames/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>368</x>
-      <y>256</y>
-      <w>304</w>
-      <h>160</h>
+      <x>33</x>
+      <y>187</y>
+      <w>209</w>
+      <h>121</h>
     </coordinates>
     <panel_attributes>IUsdzScene
 --
 name
 usdzActiveInteractionName
 usdzActiveTriggerName
-usdzActiveActionName</panel_attributes>
+usdzActiveActionName
+/objects/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>656</x>
-      <y>304</y>
-      <w>288</w>
-      <h>80</h>
+      <x>231</x>
+      <y>220</y>
+      <w>198</w>
+      <h>55</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=0..*
@@ -97,23 +96,23 @@ includes &gt;</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>656</x>
-      <y>368</y>
-      <w>240</w>
-      <h>224</h>
+      <x>231</x>
+      <y>264</y>
+      <w>154</w>
+      <h>154</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
 m2=0..*
 includes &gt;</panel_attributes>
-    <additional_attributes>10.0;10.0;40.0;10.0;40.0;110.0;130.0;110.0</additional_attributes>
+    <additional_attributes>10.0;10.0;40.0;10.0;40.0;110.0;120.0;110.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>688</x>
-      <y>32</y>
-      <w>272</w>
-      <h>160</h>
+      <x>253</x>
+      <y>33</y>
+      <w>187</w>
+      <h>110</h>
     </coordinates>
     <panel_attributes>Scene
 /_:bpy.context.scene_/
@@ -121,5 +120,59 @@ includes &gt;</panel_attributes>
 /allIUsdzScenes/
 /activeIUsdzSceneName/</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>594</x>
+      <y>220</y>
+      <w>165</w>
+      <h>55</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..*
+m2=1..*
+&lt; affects</panel_attributes>
+    <additional_attributes>130.0;20.0;10.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>594</x>
+      <y>264</y>
+      <w>154</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..*
+m2=1..*
+&lt; affects</panel_attributes>
+    <additional_attributes>120.0;70.0;60.0;70.0;60.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>539</x>
+      <y>363</y>
+      <w>209</w>
+      <h>55</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=1..*
+includes &gt;</panel_attributes>
+    <additional_attributes>10.0;20.0;170.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>539</x>
+      <y>231</y>
+      <w>418</w>
+      <h>275</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m2=1..*
+includes &gt;</panel_attributes>
+    <additional_attributes>10.0;170.0;40.0;170.0;40.0;230.0;350.0;230.0;350.0;10.0;330.0;10.0</additional_attributes>
   </element>
 </diagram>

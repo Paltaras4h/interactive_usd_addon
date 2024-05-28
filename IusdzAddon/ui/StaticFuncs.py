@@ -1,9 +1,9 @@
 import bpy
-from IusdzAddon.ui.StaticVars import is_active_obj_selected
+from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status
 
 # static funcs
 def addTrigger(name, triggerType):
-    if name in [trigger.name for trigger in get_active_interaction().triggers]:# if get_active_interaction() is not None else [("--", "--", "add a trigger")]:
+    if name in [trigger.name for trigger in get_active_interaction().triggers]:
         # show window with error
         raise ValueError(f"Name {name} already exists")
     trigger = get_active_interaction().triggers.add()
@@ -16,7 +16,7 @@ def removeTrigger(trigger):
     get_active_iUsdzScene().usdzActiveTriggerName = get_active_interaction().triggers[0].name if len(get_active_interaction().triggers) != 0 else ""
 
 def addAction(name, actionType):
-    if name in [action.name for action in get_active_interaction().actions]:# if get_active_interaction() is not None else [("--", "--", "add a trigger")]:
+    if name in [action.name for action in get_active_interaction().actions]:
         # show window with error
         raise ValueError(f"Name {name} already exists")
     action = get_active_interaction().actions.add()
@@ -25,6 +25,7 @@ def addAction(name, actionType):
     return action
 
 def removeAction(action):
+    action.clear_objects()
     get_active_interaction().actions.remove(get_active_interaction().actions.find(action.name))
     get_active_iUsdzScene().usdzActiveActionName = get_active_interaction().actions[0].name if len(get_active_interaction().actions) != 0 else ""
 
@@ -50,15 +51,16 @@ def addIUsdzScene(name, objects):
     scene = bpy.context.scene.allIUsdzScenes.add()
     scene.name = name
 
+    print("addIUsdzScene", objects)
     if len(objects) != 0:
-        scene.update_objects(objects)
+        scene.add_all_objects(objects)
 
     return scene
 
 def removeIUsdzScene(iUsdzScene):
+    iUsdzScene.clear_objects()
     bpy.context.scene.allIUsdzScenes.remove(bpy.context.scene.allIUsdzScenes.find(iUsdzScene.name))
     bpy.context.scene.activeIUsdzSceneName = bpy.context.scene.allIUsdzScenes[0].name if len(bpy.context.scene.allIUsdzScenes) != 0 else ""
-    bpy.context.active_object.objectIUsdzScenesNames.remove(bpy.context.active_object.objectIUsdzScenesNames.find(iUsdzScene.name))
 
 
 
@@ -96,10 +98,16 @@ def get_iUsdzScene_by_name(name):
         return None
 
 def get_active_iUsdzScene():
+    if get_object_selection_status() is not None:
+        return get_iUsdzScene_by_name(bpy.context.scene.activeIUsdzSceneName)
     active_iUsdzScene = None
     if len(bpy.context.selected_objects)==0:
         if len(bpy.context.scene.allIUsdzScenes)>0:
-            active_iUsdzScene = get_iUsdzScene_by_name(bpy.context.scene.activeIUsdzSceneName) if bpy.context.scene.activeIUsdzSceneName != "" else bpy.context.scene.allIUsdzScenes[0]
+            if bpy.context.scene.activeIUsdzSceneName != "":
+                active_iUsdzScene = get_iUsdzScene_by_name(bpy.context.scene.activeIUsdzSceneName)
+            else:
+                active_iUsdzScene = bpy.context.scene.allIUsdzScenes[0]
+                bpy.context.scene.activeIUsdzSceneName = active_iUsdzScene.name
         else:
             active_iUsdzScene = None
     if is_active_obj_selected():
@@ -108,17 +116,25 @@ def get_active_iUsdzScene():
             active_iUsdzScene = obj_iUsdzScenes[0]
         else:
             active_iUsdzScene = None
+    print("active_iUsdzScene", active_iUsdzScene)
     return active_iUsdzScene
-
-def get_iUsdzScene_by_name(name):
-    try:
-        return bpy.context.scene.allIUsdzScenes[name]
-    except KeyError:
-        return None
     
 def get_object_iUsdzScenes(object):
     iUsdzScenes = []
     for iUsdzScene_ref in object.objectIUsdzScenesNames:
-        if get_iUsdzScene_by_name(iUsdzScene_ref.name) is not None:
-            iUsdzScenes.append(get_iUsdzScene_by_name(iUsdzScene_ref.name))
+        scene = get_iUsdzScene_by_name(iUsdzScene_ref.name)
+        if scene is not None:
+            iUsdzScenes.append(scene)
     return iUsdzScenes
+
+
+def get_active_element_by_type(element_type):
+    if element_type == "iusdzscene":
+        return get_active_iUsdzScene()
+    elif element_type == "interaction":
+        return get_active_interaction()
+    elif element_type == "trigger":
+        return get_active_trigger()
+    elif element_type == "action":
+        return get_active_action()
+    return None
