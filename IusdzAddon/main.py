@@ -19,7 +19,7 @@ module_path = os.path.dirname("D:\\_projects\\interactive_usd_addon\\IusdzAddon"
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, NameReference
+from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, NameReference, ObjectPointerProperty
 from IusdzAddon.ui.Operators import \
     SelectObjectsOperator, CancelSelectObjectsOperator, EditAffectedObjectsButton,\
     InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, \
@@ -58,7 +58,7 @@ class IUPanel(bpy.types.Panel):
         selected_element_text = "--"
         available_iUsdzScenes = "--"
         hints = None 
-        errors = None
+        errors = []
         if len(bpy.context.selected_objects)==0:
             if len(bpy.context.scene.allIUsdzScenes)>0:
                 IUsdzScene_available = True
@@ -69,7 +69,7 @@ class IUPanel(bpy.types.Panel):
                 IUsdzScene_available = False
                 selected_element_text = "--"
                 available_iUsdzScenes = "IUsdz Scene"
-                errors = "No IUsdz Scenes available"
+                errors.append("No IUsdz Scenes available")
                 hints = "Create a new IUsdz Scene"
         if is_active_obj_selected():
             obj_iUsdzScenes = get_object_iUsdzScenes(bpy.context.active_object)
@@ -80,7 +80,7 @@ class IUPanel(bpy.types.Panel):
             else:
                 IUsdzScene_available = False
                 selected_element_text = "--"
-                errors = "No IUsdz Scenes available for this object"
+                errors.append("No IUsdz Scenes available for this object")
                 hints = "Deselect objects to see all IUsdz Scenes"
         
         row = layout.row()
@@ -113,13 +113,14 @@ class IUPanel(bpy.types.Panel):
             trig_box = inter_box.box()
             act_box = inter_box.box()
             try:
+                if len(active_iUsdzScene.objects)==0:
+                    errors.append("No objects in IUsdz Scene")
                 get_active_interaction()
-                errors = None
                 hints = None
             except ElementNotCreated:
                 trig_box.enabled = False
                 act_box.enabled = False
-                errors = "No Interaction selected"
+                errors.append("No Interaction selected")
                 
             row = trig_box.row()
             row.label(text="Triggers")
@@ -128,23 +129,28 @@ class IUPanel(bpy.types.Panel):
             # add a list of triggers
             row = trig_box.row()
             text = "--"
+            trigger_requires_affection = False
             try:
                 get_active_interaction()
+                active_trigger = get_active_trigger()
+                if active_trigger.require_affection():
+                    trigger_requires_affection = True
+                    if len(active_trigger.affectedObjects)==0:
+                        errors.append("No objects affected by Trigger")
                 if len(get_active_interaction().triggers)!=0:
-                    text = f'{get_active_trigger().triggerType}-{get_active_trigger().name}'
-                else:
-                    if errors is None:
-                        errors = "No Trigger selected"
+                    text = f'{active_trigger.triggerType}-{active_trigger.name}'
 
             except ElementNotCreated:
                 text = "--"
+                errors.append("No Trigger selected")
 
 
             row.operator_menu_enum("object.trigger_enum_operator",
                                     property="triggers",
                                     text= text)
             # edit affected objects
-            create_affected_objects_layout(trig_box, "trigger")
+            if trigger_requires_affection:
+                create_affected_objects_layout(trig_box, "trigger")
 
             # action
             
@@ -157,13 +163,13 @@ class IUPanel(bpy.types.Panel):
             text = "--"
             try:
                 get_active_interaction()
+                if len(get_active_action().affectedObjects)==0:
+                    errors.append("No objects affected by Action")
                 if len(get_active_interaction().actions)!=0:
                     text = f'{get_active_action().actionType}-{get_active_action().name}'
-                else:
-                    if errors is None:
-                        errors = "No Action selected"
             except ElementNotCreated:
                 text = "--"
+                errors.append("No Action selected")
 
             row.operator_menu_enum("object.action_enum_operator",
                                     property="actions",
@@ -171,16 +177,19 @@ class IUPanel(bpy.types.Panel):
             # edit affected objects
             create_affected_objects_layout(act_box, "action")
 
-        if errors is not None or hints is not None:
+        if len(errors)!=0 or hints is not None:
             layout.separator()
-
-        if errors is not None:
-            layout.row().label(text=errors, icon='ERROR')
-        else:
-            layout.row().label(text="Ready for export", icon='CHECKMARK')
 
         if hints is not None:
             layout.row().label(text=hints, icon='INFO')
+
+        for error in errors:
+            layout.row().label(text=error, icon='CANCEL')
+        if len(errors)==0:
+            layout.row().label(text="Ready for export", icon='CHECKMARK')
+        #else:
+        #    layout.row().label(text="Not Ready for export", icon='CANCEL')
+
             
 
 
@@ -209,7 +218,7 @@ ui_classes = [
     AddElementButton, RemoveElementButton
 ]
 properties = [
-    Trigger, Action, Interaction, IUsdzScene, NameReference
+    ObjectPointerProperty, Trigger, Action, Interaction, IUsdzScene, NameReference, 
 ]
         
 def register():
