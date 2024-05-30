@@ -40,3 +40,6 @@ def set_object_selection_status(status: str):
 
 def is_active_obj_selected():
     return bpy.context.active_object is not None and bpy.context.active_object.select_get() == True
+
+
+is_simulating_iusdz_scene = False

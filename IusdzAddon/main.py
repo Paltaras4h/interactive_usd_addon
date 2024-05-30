@@ -16,16 +16,18 @@ import sys
 import os
 
 module_path = os.path.dirname("D:\\_projects\\interactive_usd_addon\\IusdzAddon")
+#module_path = os.path.dirname(__file__).split("IusdzAddon")[0]+"IusdzAddon"
+print(module_path)
 if module_path not in sys.path:
     sys.path.append(module_path)
 
 from IusdzAddon.ui.Models import Trigger, Action, Interaction, IUsdzScene, NameReference, ObjectPointerProperty
 from IusdzAddon.ui.Operators import \
     SelectObjectsOperator, CancelSelectObjectsOperator, EditAffectedObjectsButton,\
-    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, \
+    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, ExportActiveIUsdzSceneOperator, \
         AddElementButton, RemoveElementButton
 from IusdzAddon.ui.StaticFuncs import get_active_interaction, get_active_trigger, get_active_action, get_active_iUsdzScene, get_object_iUsdzScenes
-from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status
+from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status, is_simulating_iusdz_scene
 from IusdzAddon.ui.Exceptions import ElementNotCreated
 
 class IUPanel(bpy.types.Panel):
@@ -59,29 +61,37 @@ class IUPanel(bpy.types.Panel):
         available_iUsdzScenes = "--"
         hints = None 
         errors = []
+        IUsdzScene_available = False
         if len(bpy.context.selected_objects)==0:
             if len(bpy.context.scene.allIUsdzScenes)>0:
-                IUsdzScene_available = True
-                selected_element_text = bpy.context.scene.activeIUsdzSceneName if bpy.context.scene.activeIUsdzSceneName != "" else bpy.context.scene.allIUsdzScenes[0].name
                 available_iUsdzScenes = "All IUsdz Scenes"
-                hints = "Select an object to see its IUsdz Scenes"
+                if get_active_iUsdzScene().icludes_removed_objects():
+                    errors.append("Removed objects from IUsdz Scene")
+                    hints = "Select IUsdz Scene to update objects"
+                    selected_element_text = "Select IUsdz Scene"
+                else:
+                    IUsdzScene_available = True
+                    selected_element_text = bpy.context.scene.activeIUsdzSceneName if bpy.context.scene.activeIUsdzSceneName != "" else bpy.context.scene.allIUsdzScenes[0].name
+                    hints = "Select an object to see its IUsdz Scenes"
             else:
-                IUsdzScene_available = False
                 selected_element_text = "--"
                 available_iUsdzScenes = "IUsdz Scene"
                 errors.append("No IUsdz Scenes available")
                 hints = "Create a new IUsdz Scene"
-        if is_active_obj_selected():
+        elif is_active_obj_selected():
             obj_iUsdzScenes = get_object_iUsdzScenes(bpy.context.active_object)
             available_iUsdzScenes = f"IUsdz Scenes with '{bpy.context.active_object.name}'"
             if len(obj_iUsdzScenes)>0:
                 IUsdzScene_available = True
                 selected_element_text = obj_iUsdzScenes[0].name
             else:
-                IUsdzScene_available = False
                 selected_element_text = "--"
                 errors.append("No IUsdz Scenes available for this object")
                 hints = "Deselect objects to see all IUsdz Scenes"
+        else:
+            selected_element_text = "--"
+            available_iUsdzScenes = "IUsdz Scene"
+            errors.append("No active object selected")
         
         row = layout.row()
         row.label(text=available_iUsdzScenes)
@@ -187,6 +197,7 @@ class IUPanel(bpy.types.Panel):
             layout.row().label(text=error, icon='CANCEL')
         if len(errors)==0:
             layout.row().label(text="Ready for export", icon='CHECKMARK')
+            layout.operator("object.export_active_iusdz_scene", text="Export", icon='EXPORT')
         #else:
         #    layout.row().label(text="Not Ready for export", icon='CANCEL')
 
@@ -214,8 +225,8 @@ def create_affected_objects_layout(layout, element_type):
 ui_classes = [
     IUPanel, 
     SelectObjectsOperator, CancelSelectObjectsOperator, EditAffectedObjectsButton,
-    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, 
-    AddElementButton, RemoveElementButton
+    InteractionsEnumOperator, TriggerEnumOperator, ActionEnumOperator, IUsdzScenesEnumOperator, ExportActiveIUsdzSceneOperator,
+    AddElementButton, RemoveElementButton,
 ]
 properties = [
     ObjectPointerProperty, Trigger, Action, Interaction, IUsdzScene, NameReference, 

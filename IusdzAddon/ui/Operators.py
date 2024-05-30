@@ -7,7 +7,8 @@ from IusdzAddon.ui.StaticVars import trigger_types, action_types, is_active_obj_
         get_tmp_selected_objects, set_tmp_selected_objects, get_tmp_active_object, set_tmp_active_object
 from bpy.props import EnumProperty, StringProperty
 from bpy.types import Operator
-
+from json import dumps
+import os
 
 
 class AddElementButton(Operator):
@@ -111,6 +112,17 @@ class IUsdzScenesEnumOperator(Operator):
     bl_idname = 'object.iusdzscenes_enum_operator'
     bl_description = 'Select an IUsdz Scene'
     def get_iUsdzScenes(self, context):
+        print("get_iUsdzScenes")
+        for iUsdzScene in bpy.context.scene.allIUsdzScenes:
+            for object in iUsdzScene.get_objects():
+                if object not in bpy.context.scene.objects.values():
+                    iUsdzScene.remove_object_by_ref(object)
+                    for interaction in iUsdzScene.interactions:
+                        for trigger in interaction.triggers:
+                            trigger.remove_object_by_ref(object)
+                        for action in interaction.actions:
+                            action.remove_object_by_ref(object)
+                                
         if len(bpy.context.selected_objects)==0:
             if context.scene.activeIUsdzSceneName == "":
                 context.scene.activeIUsdzSceneName = bpy.context.scene.allIUsdzScenes[0].name if len(bpy.context.scene.allIUsdzScenes)>0 else ""
@@ -183,10 +195,8 @@ class EditAffectedObjectsButton(Operator):
     element_type: StringProperty("element type", default="element")
 
     def execute(self, context):
-        print("Edit affected objects", self.element_type)
         set_object_selection_status(self.element_type)
         element = get_active_element_by_type(self.element_type)
-        print("Edit affected objects, type:", self.element_type, "element:")
         if element is None:
             set_object_selection_status(None)
             return {'CANCELLED'}
@@ -208,7 +218,6 @@ class SelectObjectsOperator(Operator):
 
 
     def execute(self, context):
-        print("Select objects", get_object_selection_status())
         affected_element = get_object_selection_status()
         element = get_active_element_by_type(affected_element)
         if element is None:
@@ -238,3 +247,59 @@ class CancelSelectObjectsOperator(Operator):
             obj.select_set(True)
         bpy.context.view_layer.objects.active = get_tmp_active_object()
         return {'FINISHED'}
+
+class ExportActiveIUsdzSceneOperator(Operator):
+    bl_idname = "object.export_active_iusdz_scene"
+    bl_label = "Export"
+    bl_options = {'REGISTER', 'UNDO'}
+    bl_description = 'Export the active IUsdz Scene'
+
+    def execute(self, context):
+        # export usdz model
+        set_tmp_selected_objects(bpy.context.selected_objects)
+        set_tmp_active_object(bpy.context.active_object)
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.objects.active = None
+
+        render_settings = {}
+        get_active_iUsdzScene().select_objects()
+        for obj in bpy.context.selected_objects:
+            render_settings[obj.name] = {
+                "hide": obj.hide_get(),
+                "hide_render": obj.hide_render,
+            }
+            obj.hide_set(False)
+            obj.hide_render = False
+        
+        dir = '\\'.join(os.path.dirname(__file__).split('\\')[:-2])
+        bpy.ops.wm.usd_export(filepath=f"{dir}\\tmp_iusdz_model.usdz", selected_objects_only=True)
+
+        for obj in bpy.context.selected_objects:
+            obj.hide_set(render_settings[obj.name]["hide"])
+            obj.hide_render = render_settings[obj.name]["hide_render"]
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in get_tmp_selected_objects():
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = get_tmp_active_object()
+
+        # save json file with interaction props
+        json_data = {}
+        json_data["interactions"] = []
+        for interaction in get_active_iUsdzScene().interactions:
+            json_data["interactions"].append({
+                "name": interaction.name,
+                "triggers": [{
+                    "name": trigger.name,
+                    "type": trigger.triggerType,
+                    "affected_objects": [object.object_ref.name for object in trigger.affectedObjects],
+                    } for trigger in interaction.triggers],
+                "actions": [{
+                    "name": action.name,
+                    "type": action.actionType,
+                    "affected_objects": [object.object_ref.name for object in action.affectedObjects],
+                    } for action in interaction.actions],
+            })
+        with open(f"{dir}\\tmp_iusdz_model_interactions.json", "w") as file:
+            file.write(dumps(json_data))
+        return {'FINISHED'}
+    

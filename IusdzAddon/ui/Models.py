@@ -77,7 +77,7 @@ class Action(bpy.types.PropertyGroup):
         object.objectActionsNames.add().name = self.name
 
     def remove_affected_object_by_ref(self, object):
-        object.object_ref.objectActionsNames.remove(object.objectActionsNames.find(self.name))
+        object.objectActionsNames.remove(object.objectActionsNames.find(self.name))
         obj_index = [i for i, obj in enumerate(self.affectedObjects) if obj.object_ref == object][0]
         self.affectedObjects.remove(obj_index)
 
@@ -135,6 +135,9 @@ class IUsdzScene(bpy.types.PropertyGroup):
     
     objects: bpy.props.CollectionProperty(type=ObjectPointerProperty)
 
+    def icludes_removed_objects(self):
+        return any([object.object_ref not in bpy.context.scene.objects.values() for object in self.objects])
+    
     def get_objects(self):
         return list({object.object_ref for object in self.objects})
     
@@ -143,7 +146,7 @@ class IUsdzScene(bpy.types.PropertyGroup):
         object.objectIUsdzScenesNames.add().name = self.name
 
     def remove_object_by_ref(self, object):
-        object.object_ref.objectIUsdzScenesNames.remove(object.object_ref.objectIUsdzScenesNames.find(self.name))
+        object.objectIUsdzScenesNames.remove(object.objectIUsdzScenesNames.find(self.name))
         obj_index = [i for i, obj in enumerate(self.objects) if obj.object_ref == object][0]
         self.objects.remove(obj_index)
         for interaction in self.interactions:
