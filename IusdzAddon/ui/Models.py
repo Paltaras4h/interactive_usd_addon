@@ -23,11 +23,15 @@ class Trigger(bpy.types.PropertyGroup):
         object.objectTriggerNames.add().name = self.name
         
     def remove_affected_object_by_ref(self, object):
+        if object not in self.get_affected_objects():
+            return
         object.objectTriggerNames.remove(object.objectTriggerNames.find(self.name))
         obj_index = [i for i, obj in enumerate(self.affectedObjects) if obj.object_ref == object][0]
         self.affectedObjects.remove(obj_index)
 
     def remove_affected_object_by_prop(self, object):
+        if object not in self.get_affected_objects():
+            return
         object.object_ref.objectTriggerNames.remove(object.objectTriggerNames.find(self.name))
         self.affectedObjects.remove(self.affectedObjects.find(object))
 # --------------------------------------------------------------------------------------------
@@ -67,7 +71,7 @@ class Action(bpy.types.PropertyGroup):
         return [(object.name, object.name, object.name) for object in self.affectedObjects]
     affectedObjectsNames: bpy.props.EnumProperty(name="affectedObjectsNames", items=get_affected_objects_names_property)
     actionType: EnumProperty(name="Action Type", items=[('hide', 'Hide', 'Hide'), ('show', 'Show', 'Show')])
-    duration: bpy.props.FloatProperty(name="Duration", default=0.0) # todo
+    duration: bpy.props.FloatProperty(name="Duration", default=0.0, min=0.0, max=100.0)
 
     def get_affected_objects(self):
         return list({object.object_ref for object in self.affectedObjects})
@@ -77,11 +81,15 @@ class Action(bpy.types.PropertyGroup):
         object.objectActionsNames.add().name = self.name
 
     def remove_affected_object_by_ref(self, object):
+        if object not in self.get_affected_objects():
+            return
         object.objectActionsNames.remove(object.objectActionsNames.find(self.name))
         obj_index = [i for i, obj in enumerate(self.affectedObjects) if obj.object_ref == object][0]
         self.affectedObjects.remove(obj_index)
 
     def remove_affected_object_by_prop(self, object):
+        if object not in self.get_affected_objects():
+            return
         object.object_ref.objectActionsNames.remove(object.objectActionsNames.find(self.name))
         self.affectedObjects.remove(self.affectedObjects.find(object))
 # --------------------------------------------------------------------------------------------
@@ -150,7 +158,11 @@ class IUsdzScene(bpy.types.PropertyGroup):
         obj_index = [i for i, obj in enumerate(self.objects) if obj.object_ref == object][0]
         self.objects.remove(obj_index)
         for interaction in self.interactions:
-            interaction.cascade_delete()
+            for trigger in interaction.triggers:
+                if trigger.require_affection():
+                    trigger.remove_affected_object_by_ref(object)
+            for action in interaction.actions:
+                action.remove_affected_object_by_ref(object)
 
     def remove_object_by_prop(self, object):
         object.object_ref.objectIUsdzScenesNames.remove(object.object_ref.objectIUsdzScenesNames.find(self.name))
