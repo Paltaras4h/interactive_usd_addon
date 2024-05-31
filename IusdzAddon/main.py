@@ -30,6 +30,11 @@ from IusdzAddon.ui.StaticFuncs import get_active_interaction, get_active_trigger
 from IusdzAddon.ui.StaticVars import is_active_obj_selected, get_object_selection_status, is_simulating_iusdz_scene
 from IusdzAddon.ui.Exceptions import ElementNotCreated
 
+# object selection handler
+def my_handler(scene):
+    print("Active object:", scene.objects.active.name)
+
+
 class IUPanel(bpy.types.Panel):
     bl_label = "Interactive Usdz"
     bl_idname = "OBJECT_PT_IUPanel"
@@ -39,23 +44,40 @@ class IUPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        #is_simulating_iusdz_scene = True
+        if is_simulating_iusdz_scene:
+            layout.label(text="Simulation mode")
+            #layout.label(text=get_active_iUsdzScene().name)
+            #layout.operator("object.stop_simulation", text="Stop", icon='CANCEL')
+            if is_active_obj_selected():
+                print("active object selected")
+            return
+        
         if get_object_selection_status() is not None:
             affected_element = get_object_selection_status()
 
             if affected_element == "iusdzscene":
                 layout.label(text=f"{get_active_iUsdzScene().name} IUsdz Scene")
+                layout.separator()
+                layout.label(text="Select objects to be included in the scene.")
             elif affected_element == "trigger":
-                layout.label(text=f"{get_active_trigger().name} Trigger")
+                layout.label(text=f"{get_active_trigger().name}-{get_active_trigger().triggerType} Trigger")
+                layout.separator()
+                layout.label(text="Select objects to be triggered.")
             elif affected_element == "action":
-                layout.label(text=f"{get_active_action().name} Action")
-            layout.separator()
-            layout.label(text="Select objects to be affected.")
+                layout.label(text=f"{get_active_action().name}-{get_active_action().actionType} Action")
+                layout.separator()
+                layout.label(text="Select objects to be affected.")
+
             box = layout.box()
             box.label(text=f"{len(bpy.context.selected_objects)} Selected objects")
             layout.operator("object.select_objects", text="Pick", icon='RESTRICT_SELECT_OFF')
             layout.operator("object.cancel_select_objects", text="Cancel", icon='CANCEL')
             return
 
+        # for area in bpy.context.screen.areas:
+        #     if area.type == 'VIEW_3D':
+        #         print(1) # bpy.ops.view3d.localview()
 
         selected_element_text = "--"
         available_iUsdzScenes = "--"
@@ -83,11 +105,11 @@ class IUPanel(bpy.types.Panel):
             available_iUsdzScenes = f"IUsdz Scenes with '{bpy.context.active_object.name}'"
             if len(obj_iUsdzScenes)>0:
                 IUsdzScene_available = True
-                selected_element_text = obj_iUsdzScenes[0].name
+                selected_element_text = obj_iUsdzScenes[0].name if bpy.context.scene.activeIUsdzSceneName not in bpy.context.active_object.objectIUsdzScenesNames else bpy.context.scene.activeIUsdzSceneName
             else:
                 selected_element_text = "--"
                 errors.append("No IUsdz Scenes available for this object")
-                hints = "Deselect objects to see all IUsdz Scenes"
+            hints = "Deselect objects to see all IUsdz Scenes"
         else:
             selected_element_text = "--"
             available_iUsdzScenes = "IUsdz Scene"
@@ -95,8 +117,8 @@ class IUPanel(bpy.types.Panel):
         
         row = layout.row()
         row.label(text=available_iUsdzScenes)
-        row.operator("object.add_element_button", icon='ADD').element_type = "iusdzscene"
-        row.operator("object.remove_element_button", icon='REMOVE').element_type = "iusdzscene"
+        row.operator("object.add_element_button", icon='ADD', text='').element_type = "iusdzscene"
+        row.operator("object.remove_element_button", icon='REMOVE', text='').element_type = "iusdzscene"
 
         row = layout.row()
         row.operator_menu_enum("object.iusdzscenes_enum_operator",
@@ -110,14 +132,31 @@ class IUPanel(bpy.types.Panel):
 
             inter_box = layout.box()
             row = inter_box.row()
-            row.label(text="Interaction")
-            row.operator("object.add_element_button", icon='ADD').element_type = "interaction"
-            row.operator("object.remove_element_button", icon='REMOVE').element_type = "interaction"
+            row.label(text=f"Interactions ({len(active_iUsdzScene.interactions)})")
+            row.operator("object.add_element_button", icon='ADD', text='').element_type = "interaction"
+            row.operator("object.remove_element_button", icon='REMOVE', text='').element_type = "interaction"
             # add a list of interactions
             row = inter_box.row()
+            
+            interaction_name_text = "--"
+            if len(active_iUsdzScene.interactions)!=0:
+                try:
+                    trigger = get_active_interaction().triggers[0] if len(get_active_interaction().triggers)!=0 else None
+                    if trigger is not None:
+                        trigger_affected_objects = [obj.name for obj in trigger.get_affected_objects()]
+                        if trigger.triggerType == 'on_load':
+                            interaction_name_text = f"{active_iUsdzScene.usdzActiveInteractionName}-{trigger.triggerType}..."
+                        elif len(trigger_affected_objects) != 0:
+                            interaction_name_text = f"{active_iUsdzScene.usdzActiveInteractionName}-{trigger.triggerType}-{trigger_affected_objects[0]}..."
+                        else:
+                            interaction_name_text = active_iUsdzScene.usdzActiveInteractionName
+                    else:
+                        interaction_name_text = active_iUsdzScene.usdzActiveInteractionName
+                except ElementNotCreated:
+                    interaction_name_text = active_iUsdzScene.usdzActiveInteractionName
             row.operator_menu_enum("object.inter_enum_operator",
                                     property="interactions",
-                                    text=active_iUsdzScene.usdzActiveInteractionName if len(active_iUsdzScene.interactions)!=0 else "--")
+                                    text=interaction_name_text)
             
             # trigger
             trig_box = inter_box.box()
@@ -133,9 +172,9 @@ class IUPanel(bpy.types.Panel):
                 errors.append("No Interaction selected")
                 
             row = trig_box.row()
-            row.label(text="Triggers")
-            row.operator("object.add_element_button", icon='ADD').element_type = "trigger"
-            row.operator("object.remove_element_button", icon='REMOVE').element_type = "trigger"
+            row.label(text=f"Triggers ({len(get_active_interaction().triggers)})")
+            row.operator("object.add_element_button", icon='ADD', text='').element_type = "trigger"
+            row.operator("object.remove_element_button", icon='REMOVE', text='').element_type = "trigger"
             # add a list of triggers
             row = trig_box.row()
             text = "--"
@@ -154,10 +193,9 @@ class IUPanel(bpy.types.Panel):
                 text = "--"
                 errors.append("No Trigger selected")
 
-
             row.operator_menu_enum("object.trigger_enum_operator",
                                     property="triggers",
-                                    text= text)
+                                    text = text)
             # edit affected objects
             if trigger_requires_affection:
                 create_affected_objects_layout(trig_box, "trigger")
@@ -165,9 +203,9 @@ class IUPanel(bpy.types.Panel):
             # action
             
             row = act_box.row()
-            row.label(text="Actions")
-            row.operator("object.add_element_button", icon='ADD').element_type = "action"
-            row.operator("object.remove_element_button", icon='REMOVE').element_type = "action"
+            row.label(text=f"Actions ({str(len(get_active_interaction().actions))})")
+            row.operator("object.add_element_button", icon='ADD', text='').element_type = "action"
+            row.operator("object.remove_element_button", icon='REMOVE', text='').element_type = "action"
             # add a list of actions
             row = act_box.row()
             text = "--"
@@ -184,8 +222,16 @@ class IUPanel(bpy.types.Panel):
             row.operator_menu_enum("object.action_enum_operator",
                                     property="actions",
                                     text= text)
+            
+            # duration slider
+            try:
+                if get_active_action().actionType == "show" or get_active_action().actionType == "hide":
+                    act_box.prop(get_active_action(),"duration", text="Animation duration (s)")
+            except ElementNotCreated:
+                pass
             # edit affected objects
             create_affected_objects_layout(act_box, "action")
+
 
         if len(errors)!=0 or hints is not None:
             layout.separator()
@@ -197,12 +243,20 @@ class IUPanel(bpy.types.Panel):
             layout.row().label(text=error, icon='CANCEL')
         if len(errors)==0:
             layout.row().label(text="Ready for export", icon='CHECKMARK')
-            layout.operator("object.export_active_iusdz_scene", text="Export", icon='EXPORT')
+            layout.operator("object.export_active_iusdz_scene", icon='EXPORT')
         #else:
         #    layout.row().label(text="Not Ready for export", icon='CANCEL')
 
             
 
+def update_frame_index():
+    wm = bpy.context.window_manager
+    if bpy.context.area.type == 'VIEW_3D':
+        print("updating frame index")
+        if hasattr(wm, 'my_tool'):
+            my_tool = wm.my_tool
+            my_tool.frame_index = (my_tool.frame_index + 1) % len(image_sequence)
+            bpy.context.area.tag_redraw()
 
 def create_affected_objects_layout(layout, element_type):
     row = layout.row()
@@ -253,6 +307,8 @@ def register():
             pass
         register_class(cls)
 
+    bpy.app.handlers.frame_change_pre.append(my_handler)
+
 def unregister():
     for cls in ui_classes+properties:
         unregister_class(cls)
@@ -262,6 +318,8 @@ def unregister():
     del bpy.types.Object.objectActionsNames
     del bpy.types.Scene.allIUsdzScenes
     del bpy.types.Scene.activeIUsdzSceneName
+
+    bpy.app.handlers.frame_change_pre.remove(my_handler)
 
 
 if __name__ == "__main__":
