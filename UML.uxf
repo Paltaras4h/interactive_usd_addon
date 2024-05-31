@@ -68,7 +68,7 @@ name
       <x>33</x>
       <y>187</y>
       <w>209</w>
-      <h>121</h>
+      <h>143</h>
     </coordinates>
     <panel_attributes>IUsdzScene
 --
@@ -76,7 +76,8 @@ name
 usdzActiveInteractionName
 usdzActiveTriggerName
 usdzActiveActionName
-/objects/</panel_attributes>
+/objects/
+/interactions/</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
