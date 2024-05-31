@@ -94,7 +94,7 @@ def props_to_usdz(usdz_model_path, props):
             objects_paths = [find_xform_path(usda, obj) for obj in action_data['affected_objects'] if find_xform_path(usda, obj) is not None]
             action.CreateRelationship("affectedObjects").SetTargets(objects_paths)
             if action_data['type'] == 'hide' or action_data['type'] == 'show':
-                action.CreateAttribute('duration', Sdf.ValueTypeNames.Double).Set(0.33)
+                action.CreateAttribute('duration', Sdf.ValueTypeNames.Double).Set(action_data['duration'])
                 action.CreateAttribute('easeType', Sdf.ValueTypeNames.Token).Set("inout")
                 action.CreateAttribute('info:id', Sdf.ValueTypeNames.Token).Set("Visibility")
                 action.CreateAttribute('motionType', Sdf.ValueTypeNames.Token).Set("pop")
@@ -125,6 +125,7 @@ if __name__ == '__main__':
     #                 {
     #                     "name": "action1",
     #                     "type": "hide",
+#                         "duration": 0.33,
     #                     "affected_objects": ["Cube_002", "Cube_001"]
     #                 }
     #             ]
