@@ -125,7 +125,7 @@ def get_active_iUsdzScene():
     if is_active_obj_selected():
         obj_iUsdzScenes = get_object_iUsdzScenes(bpy.context.active_object)
         if len(obj_iUsdzScenes)>0:
-            active_iUsdzScene = obj_iUsdzScenes[0]
+            active_iUsdzScene = obj_iUsdzScenes[0] if bpy.context.scene.activeIUsdzSceneName not in bpy.context.active_object.objectIUsdzScenesNames else get_iUsdzScene_by_name(bpy.context.scene.activeIUsdzSceneName)
         else:
             active_iUsdzScene = None
             
@@ -149,4 +149,5 @@ def get_active_element_by_type(element_type):
         return get_active_trigger()
     elif element_type == "action":
         return get_active_action()
-    return None
+    
+    raise ElementNotCreated(element_type)
