@@ -3,11 +3,11 @@
 - existing solution (Reality Composer) is useless as there is no ability to select objects in the outliner, and it requires to pick objects in 3D viewport 🤦‍♂️
 - will add more info when I have more time.
 
-## Addon preview
-![Addon preview Screenshot](./previews/addon_preview.png)
-
 ## Example result of interactive USDZ
 ![Example result GIF](./previews/example_result.gif)
+
+## Addon preview
+![Addon preview Screenshot](./previews/addon_preview.png)
 
 ## Usage
 - clone the repo, open main.py in Blender Text Editor and run the script.
