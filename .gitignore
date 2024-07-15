@@ -8,3 +8,6 @@ interactive_usd_addon.blend
 interactive_usd_addon.blend1
 tmp_iusdz_model.usdz
 tmp_iusdz_model_interactions.json
+back-end/model.usdc
+back-end/model.usdz
+tmp_usdz_extract/tmp_iusdz_model.usdc
