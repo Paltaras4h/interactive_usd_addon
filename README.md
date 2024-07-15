@@ -11,6 +11,7 @@
 
 ## Usage
 - clone the repo, open main.py in Blender Text Editor and run the script.
+- After clicking on Export IUsdz Scene, to finish the model preparation, run PropsToUsdz.py from back-end folder (I wanted to make the script commercial and run back-end on remote server, however later realized, no one will need it ): ) 
 - I hope the UI is intuinive enough to understand how the addon works.
 
 ## Notes
