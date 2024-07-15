@@ -57,17 +57,17 @@ class IUPanel(bpy.types.Panel):
             affected_element = get_object_selection_status()
 
             if affected_element == "iusdzscene":
-                layout.label(text=f"{get_active_iUsdzScene().name} IUsdz Scene")
-                layout.separator()
                 layout.label(text="Select objects to be included in the scene.")
+                layout.separator()
+                layout.label(text=f"{get_active_iUsdzScene().name} IUsdz Scene")
             elif affected_element == "trigger":
-                layout.label(text=f"{get_active_trigger().name}-{get_active_trigger().triggerType} Trigger")
-                layout.separator()
                 layout.label(text="Select objects to be triggered.")
-            elif affected_element == "action":
-                layout.label(text=f"{get_active_action().name}-{get_active_action().actionType} Action")
                 layout.separator()
+                layout.label(text=f"{get_active_trigger().name}-{get_active_trigger().triggerType} Trigger")
+            elif affected_element == "action":
                 layout.label(text="Select objects to be affected.")
+                layout.separator()
+                layout.label(text=f"{get_active_action().name}-{get_active_action().actionType} Action")
 
             box = layout.box()
             box.label(text=f"{len(bpy.context.selected_objects)} Selected objects")

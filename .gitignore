@@ -6,3 +6,5 @@ IusdzAddon/ui/__pycache__/StaticVars.cpython-311.pyc
 IusdzAddon/__pycache__/__init__.cpython-311.pyc
 interactive_usd_addon.blend
 interactive_usd_addon.blend1
+tmp_iusdz_model.usdz
+tmp_iusdz_model_interactions.json

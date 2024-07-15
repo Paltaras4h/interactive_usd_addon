@@ -292,7 +292,7 @@ class SelectObjectsOperator(Operator):
             # if object not in IUdzScene, request confirmation to add it
             self.not_added_objects = [obj for obj in bpy.context.selected_objects if obj not in iusdz_objects]
             if any(self.not_added_objects):
-                return context.window_manager.invoke_props_dialog(self, title="Objects outside IUsdz Scene:")
+                return context.window_manager.invoke_props_dialog(self, title="Objects outside of IUsdz Scene:")
         else:
             # if user removes an object, request confirmation to remove it
             self.missing_objects = [obj for obj in iusdz_objects if obj not in bpy.context.selected_objects]
